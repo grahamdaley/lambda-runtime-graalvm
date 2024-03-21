@@ -1,5 +1,11 @@
 # Lambda Runtime Graalvm Releases #
 
+### Version 3.0.0 (Mar 21, 2024)
+ * Forked from formkiq/lambda-runtime-graalvm
+ * Migrated build.gradle to Kotlin build.gradle.kts
+ * Upgraded to Gradle 8.5
+ * Added entrypoint for statically-compiled Lambda request handler
+
 ### Version 2.3.1 (May 3, 2021)
 - [Pull 11](https://github.com/formkiq/lambda-runtime-graalvm/pull/11)
  * Fixed Graalvm handling java.util.Map parameter type
