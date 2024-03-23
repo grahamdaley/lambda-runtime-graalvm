@@ -20,7 +20,6 @@ public class TestRequestInputStringIntHandler implements RequestHandler<String, 
 
   @Override
   public Integer handleRequest(final String input, final Context context) {
-    final int num = 98;
-    return Integer.valueOf(num);
+      return 98;
   }
 }
