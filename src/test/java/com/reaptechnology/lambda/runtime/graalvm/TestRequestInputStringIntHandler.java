@@ -17,9 +17,16 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 
 /** Test {@link RequestHandler}, input {@link String} return {@link Integer}. */
 public class TestRequestInputStringIntHandler implements RequestHandler<String, Integer> {
+  /**
+   * An int to return.
+   *
+   * @see #handleRequest(String, Context)
+   * @see #handleRequest(String, Context)
+   */
+  public static final int AN_INT = 98;
 
   @Override
   public Integer handleRequest(final String input, final Context context) {
-      return 98;
+    return AN_INT;
   }
 }
