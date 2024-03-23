@@ -12,15 +12,26 @@
  */
 package com.reaptechnology.lambda.runtime.graalvm;
 
-import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.RequestHandler;
-import java.util.Map;
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
 
-/** Test {@link RequestHandler}, input {@link Map} return {@link Void}. */
-public class TestRequestInputMapVoidHandler implements RequestHandler<Map<String, Object>, Void> {
+import java.io.IOException;
+
+/** Implementation of {@link LambdaLogger}. */
+public class LambdaLoggerSystemOut implements LambdaLogger {
 
   @Override
-  public Void handleRequest(final Map<String, Object> input, final Context context) {
-    return null;
+  public void log(final String message) {
+    System.out.println(message);
+    System.out.flush();
+  }
+
+  @Override
+  public void log(final byte[] message) {
+    try {
+      System.out.write(message);
+    } catch (IOException e) {
+      // NOTE: When actually running on AWS Lambda, an IOException would never happen
+      e.printStackTrace();
+    }
   }
 }

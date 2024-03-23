@@ -1,5 +1,8 @@
+import com.vanniktech.maven.publish.SonatypeHost
+
 group = "io.github.grahamdaley"
 version = "3.0.0"
+
 object Meta {
     const val NAME = "lambda-runtime-graalvm"
     const val DESC = "Based on FormKiQ Lambda Runtime Graalvm by Mike Friesen"
@@ -10,19 +13,15 @@ object Meta {
 }
 
 repositories {
-    gradlePluginPortal()
     mavenCentral()
 }
 
 plugins {
     java
-    `maven-publish`
-    signing
     checkstyle
-    alias(libs.plugins.nexus.publish)
+    alias(libs.plugins.maven.publish)
     alias(libs.plugins.spotbugs)
     alias(libs.plugins.spotless)
-    alias(libs.plugins.versions)
 }
 
 dependencies {
@@ -36,29 +35,20 @@ dependencies {
 }
 
 java {
-    withJavadocJar()
-    withSourcesJar()
-
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 
-artifacts {
-    archives(tasks.named("jar"))
-    archives(tasks.named("javadocJar"))
-    archives(tasks.named("sourcesJar"))
-}
-
 checkstyle {
-    toolVersion = "8.29"
-    configFile = file("config/checkstyle/checkstyle.xml")
-    configProperties = mapOf("project_loc" to projectDir)
+    toolVersion = "10.14.2"
+    configFile = file("${rootDir.path}/config/checkstyle/checkstyle.xml")
+    configProperties = mapOf("project_loc" to projectDir.path)
     maxWarnings = 0
 }
 
 spotbugs {
-    excludeFilter = file("$rootDir/config/spotbugs/spotbugs-exclude.xml")
+    excludeFilter = file("${rootDir.path}/config/spotbugs/spotbugs-exclude.xml")
 }
 
 spotless {
@@ -67,84 +57,41 @@ spotless {
     }
 }
 
-signing {
-    val signingKey =
-        providers
-            .environmentVariable("GPG_SIGNING_KEY")
-            .orElse(providers.gradleProperty("gpg.key"))
-    val signingPassphrase =
-        providers
-            .environmentVariable("GPG_SIGNING_PASSPHRASE")
-            .orElse(providers.gradleProperty("gpg.passphrase"))
+mavenPublishing {
+    publishToMavenCentral(SonatypeHost.S01, automaticRelease = true)
+    signAllPublications()
+    coordinates(project.group.toString(), rootProject.name, project.version.toString())
 
-    if (signingKey.isPresent && signingPassphrase.isPresent) {
-        useInMemoryPgpKeys(signingKey.get(), signingPassphrase.get())
-        val extension = extensions.getByName("publishing") as PublishingExtension
-        sign(extension.publications)
-    }
-}
-
-publishing {
-    publications {
-        create<MavenPublication>(Meta.NAME) {
-            groupId = project.group as String
-            artifactId = Meta.NAME
-            version = project.version as String
-            from(components["java"])
-            artifact(tasks["sourcesJar"])
-            artifact(tasks["javadocJar"])
-            pom {
-                name.set("Lambda Runtime Graalvm")
-                description.set("Based on FormKiQ Lambda Runtime Graalvm by Mike Friesen")
-                url.set("https://github.com/${Meta.GITHUB_REPO}")
-                licenses {
-                    license {
-                        name.set(Meta.LICENSE)
-                        url.set("https://opensource.org/licenses/Apache-2.0")
-                    }
-                }
-                developers {
-                    developer {
-                        id.set("mfriesen")
-                        name.set("Mike Friesen")
-                        email.set("mike@formkiq.com")
-                    }
-                    developer {
-                        id.set("grahamdaley")
-                        name.set("Graham Daley")
-                        email.set("graham@daleybread.com")
-                    }
-                }
-                scm {
-                    url.set("https://github.com/${Meta.GITHUB_REPO}.git")
-                    connection.set("scm:git:git://github.com/${Meta.GITHUB_REPO}.git")
-                    developerConnection.set("scm:git:git://github.com/#${Meta.GITHUB_REPO}.git")
-                }
-                issueManagement {
-                    url.set("https://github.com/${Meta.GITHUB_REPO}/issues")
-                }
+    pom {
+        name.set("Lambda Runtime Graalvm")
+        description.set("Based on FormKiQ Lambda Runtime Graalvm by Mike Friesen")
+        inceptionYear.set("2024")
+        url.set("https://github.com/${Meta.GITHUB_REPO}")
+        licenses {
+            license {
+                name.set(Meta.LICENSE)
+                url.set("https://opensource.org/licenses/Apache-2.0")
             }
         }
-    }
-}
-
-nexusPublishing {
-    repositories {
-        sonatype {
-            nexusUrl.set(uri(Meta.RELEASE))
-            snapshotRepositoryUrl.set(uri(Meta.SNAPSHOT))
-            val ossrhUsername =
-                providers
-                    .environmentVariable("OSSRH_USERNAME")
-                    .orElse(providers.gradleProperty("ossrh.username"))
-            val ossrhPassword =
-                providers
-                    .environmentVariable("OSSRH_PASSWORD")
-                    .orElse(providers.gradleProperty("ossrh.password"))
-            if (ossrhUsername.isPresent && ossrhPassword.isPresent) {
-                username.set(ossrhUsername.get())
-                password.set(ossrhPassword.get())
+        developers {
+            developer {
+                id.set("mfriesen")
+                name.set("Mike Friesen")
+                email.set("mike@formkiq.com")
             }
+            developer {
+                id.set("grahamdaley")
+                name.set("Graham Daley")
+                email.set("graham@daleybread.com")
+            }
+        }
+        scm {
+            url.set("https://github.com/${Meta.GITHUB_REPO}.git")
+            connection.set("scm:git:git://github.com/${Meta.GITHUB_REPO}.git")
+            developerConnection.set("scm:git:git://github.com/#${Meta.GITHUB_REPO}.git")
+        }
+        issueManagement {
+            url.set("https://github.com/${Meta.GITHUB_REPO}/issues")
         }
     }
 }
@@ -162,8 +109,10 @@ tasks {
         dependsOn("spotlessApply")
     }
 
-    named("check") {
-        dependsOn("publishToMavenLocal")
+    configureEach {
+        if (name == "generateMetadataFileForMavenPublication") {
+            mustRunAfter("plainJavadocJar")
+        }
     }
 
     withType<Javadoc> {

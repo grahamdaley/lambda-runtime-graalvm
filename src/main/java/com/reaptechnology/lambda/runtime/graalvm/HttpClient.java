@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
@@ -31,7 +32,7 @@ public class HttpClient {
    * @throws IOException IOException
    */
   public static HttpResponse get(final String url) throws IOException {
-    URL u = new URL(url);
+    URL u = URI.create(url).toURL();
     HttpURLConnection conn = (HttpURLConnection) u.openConnection();
     conn.setRequestMethod("GET");
 
@@ -50,11 +51,10 @@ public class HttpClient {
     HttpResponse response = new HttpResponse(conn.getResponseCode());
 
     conn.getHeaderFields()
-        .entrySet()
         .forEach(
-            e -> {
-              if (e.getKey() != null && e.getValue() != null) {
-                response.addHeader(e.getKey(), e.getValue());
+            (key, value) -> {
+              if (key != null && value != null) {
+                response.addHeader(key, value);
               }
             });
 
@@ -62,7 +62,7 @@ public class HttpClient {
     BufferedReader br =
         new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
 
-    String line = null;
+    String line;
     while ((line = br.readLine()) != null) {
       sb.append(line);
     }
@@ -83,8 +83,7 @@ public class HttpClient {
    * @throws IOException IOException
    */
   public static HttpResponse post(final String url, final String body) throws IOException {
-
-    URL u = new URL(url);
+    URL u = URI.create(url).toURL();
 
     HttpURLConnection conn = (HttpURLConnection) u.openConnection();
     conn.setDoOutput(true);

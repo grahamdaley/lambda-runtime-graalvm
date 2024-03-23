@@ -12,25 +12,23 @@
  */
 package com.reaptechnology.lambda.runtime.graalvm;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 
-/** Implementation of {@link LambdaLogger}. */
-public class LambdaLoggerSystemOut implements LambdaLogger {
-
-  @Override
-  public void log(final String message) {
-    System.out.println(message);
-    System.out.flush();
-  }
+/** Test {@link RequestStreamHandler} and returns a {@link String}. */
+public class TestRequestStreamHandler implements RequestStreamHandler {
 
   @Override
-  public void log(final byte[] message) {
-    try {
-      System.out.write(message);
-    } catch (IOException e) {
-      // NOTE: When actually running on AWS Lambda, an IOException would never happen
-      e.printStackTrace();
-    }
+  public void handleRequest(
+      final InputStream input, final OutputStream output, final Context context)
+      throws IOException {
+    OutputStreamWriter writer = new OutputStreamWriter(output, "UTF-8");
+    writer.write("test data result");
+    writer.close();
   }
 }

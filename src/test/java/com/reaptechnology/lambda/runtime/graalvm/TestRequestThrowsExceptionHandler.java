@@ -14,20 +14,18 @@ package com.reaptechnology.lambda.runtime.graalvm;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 
-/** Test {@link RequestStreamHandler} and returns a {@link String}. */
-public class TestRequestStreamHandler implements RequestStreamHandler {
+/** Test {@link RequestStreamHandler} that throws an {@link IOException}. */
+public class TestRequestThrowsExceptionHandler implements RequestStreamHandler {
 
   @Override
   public void handleRequest(
       final InputStream input, final OutputStream output, final Context context)
       throws IOException {
-    OutputStreamWriter writer = new OutputStreamWriter(output, "UTF-8");
-    writer.write("test data result");
-    writer.close();
+    throw new IOException("test error");
   }
 }

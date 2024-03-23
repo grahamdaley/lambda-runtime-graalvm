@@ -14,17 +14,14 @@ package com.reaptechnology.lambda.runtime.graalvm;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import java.util.HashMap;
+
 import java.util.Map;
 
-/** Test {@link RequestHandler}, input {@link String} return {@link Map}. */
-public class TestRequestInputStringMapHandler
-    implements RequestHandler<String, Map<String, String>> {
+/** Test {@link RequestHandler}, input {@link Map} return {@link Void}. */
+public class TestRequestInputMapVoidHandler implements RequestHandler<Map<String, Object>, Void> {
 
   @Override
-  public Map<String, String> handleRequest(final String input, final Context context) {
-    Map<String, String> map = new HashMap<>();
-    map.put("test", "123");
-    return map;
+  public Void handleRequest(final Map<String, Object> input, final Context context) {
+    return null;
   }
 }

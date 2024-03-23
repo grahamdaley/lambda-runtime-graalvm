@@ -13,18 +13,19 @@
 package com.reaptechnology.lambda.runtime.graalvm;
 
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import com.amazonaws.services.lambda.runtime.RequestHandler;
 
-/** Test {@link RequestStreamHandler} that throws an {@link IOException}. */
-public class TestRequestThrowsExceptionHandler implements RequestStreamHandler {
+import java.util.HashMap;
+import java.util.Map;
+
+/** Test {@link RequestHandler}, input {@link String} return {@link Map}. */
+public class TestRequestInputStringMapHandler
+    implements RequestHandler<String, Map<String, String>> {
 
   @Override
-  public void handleRequest(
-      final InputStream input, final OutputStream output, final Context context)
-      throws IOException {
-    throw new IOException("test error");
+  public Map<String, String> handleRequest(final String input, final Context context) {
+    Map<String, String> map = new HashMap<>();
+    map.put("test", "123");
+    return map;
   }
 }

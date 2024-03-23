@@ -12,20 +12,21 @@
  */
 package com.reaptechnology.lambda.runtime.graalvm;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.mockserver.integration.ClientAndServer.startClientAndServer;
-import static org.mockserver.model.HttpRequest.request;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.mock.action.ExpectationResponseCallback;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.mockserver.integration.ClientAndServer.startClientAndServer;
+import static org.mockserver.model.HttpRequest.request;
 
 /** Unit tests for {@link LambdaRuntime}. */
 public class LambdaRuntimeTest {
@@ -244,7 +245,7 @@ public class LambdaRuntimeTest {
   public void testInvoke08() throws Exception {
     // given
     String clazz =
-        "com.formkiq.lambda.runtime.graalvm.TestRequestInputStringStringHandler::handleRequest";
+        "com.reaptechnology.lambda.runtime.graalvm.TestRequestInputStringStringHandler::handleRequest";
     Map<String, String> env = createEnv(clazz);
 
     // when
@@ -263,7 +264,8 @@ public class LambdaRuntimeTest {
   @Test
   public void testInvoke09() throws Exception {
     // given
-    String clazz = "com.formkiq.lambda.runtime.graalvm.TestRequestInputStringStringHandler::run";
+    String clazz =
+        "com.reaptechnology.lambda.runtime.graalvm.TestRequestInputStringStringHandler::run";
     Map<String, String> env = createEnv(clazz);
 
     // when
@@ -283,7 +285,8 @@ public class LambdaRuntimeTest {
   @Test
   public void testInvoke10() throws Exception {
     // given
-    String clazz = "com.formkiq.lambda.runtime.graalvm.TestRequestInputStringStringHandler::run";
+    String clazz =
+        "com.reaptechnology.lambda.runtime.graalvm.TestRequestInputStringStringHandler::run";
     Map<String, String> env = createEnv(clazz);
     env.remove("SINGLE_LOOP");
     env.remove("AWS_LAMBDA_RUNTIME_API");

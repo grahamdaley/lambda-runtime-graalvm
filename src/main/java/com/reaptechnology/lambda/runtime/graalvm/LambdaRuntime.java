@@ -17,15 +17,12 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.HashMap;
@@ -171,6 +168,17 @@ public class LambdaRuntime {
   }
 
   /**
+   * Main entry point for statically-linked handler.
+   *
+   * @param handler {@link RequestHandler}
+   * @throws IOException IOException
+   */
+  @SuppressWarnings("rawtypes")
+  public static void invoke(final RequestHandler handler) throws IOException {
+    invokeClass(envToMap(), handler, "handleRequest");
+  }
+
+  /**
    * Handle Lambda Request.
    *
    * @param env {@link Map}
@@ -305,8 +313,7 @@ public class LambdaRuntime {
 
     Class<?> valueClass = value != null ? value.getClass() : null;
 
-    if (valueClass != null && value != null) {
-
+    if (valueClass != null) {
       if (String.class.equals(valueClass)) {
         val = value.toString();
       } else {
@@ -369,11 +376,11 @@ public class LambdaRuntime {
     InputStream input = new ByteArrayInputStream(payload.getBytes(StandardCharsets.UTF_8));
     handler.handleRequest(input, output, context);
 
-    return new String(output.toByteArray(), StandardCharsets.UTF_8);
+    return output.toString(StandardCharsets.UTF_8);
   }
 
   /**
-   * Pull environment variables and properties into a single map
+   * Pull environment variables and properties into a single map.
    *
    * @return {@link Map}
    */
@@ -389,15 +396,6 @@ public class LambdaRuntime {
     }
 
     return env;
-  }
-
-  /**
-   * Main entry point for statically-linked handler
-   *
-   * @params handler {@link RequestHandler}
-   */
-  public static void invoke(final RequestHandler handler) {
-    invokeClass(envToMap(), handler, "handleRequest");
   }
 
   /**

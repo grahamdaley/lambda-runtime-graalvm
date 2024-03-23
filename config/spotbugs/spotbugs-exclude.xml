@@ -27,14 +27,14 @@ For a detailed description of spotbugs bug categories, see https://spotbugs.read
 	<Match>
         <Bug pattern="EI_EXPOSE_REP"/>
         <OR>
-            <Class name="com.formkiq.lambda.runtime.graalvm.HttpResponse"/>
+            <Class name="com.reaptechnology.lambda.runtime.graalvm.HttpResponse"/>
         </OR>
     </Match>
 
     <Match>
         <Bug pattern="EI_EXPOSE_REP2"/>
         <OR>
-            <Class name="com.formkiq.lambda.runtime.graalvm.HttpResponse"/>
+            <Class name="com.reaptechnology.lambda.runtime.graalvm.HttpResponse"/>
         </OR>
     </Match>
     

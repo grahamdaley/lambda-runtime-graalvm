@@ -11,4 +11,3 @@ plugins {
 }
 
 rootProject.name = "lambda-runtime-graalvm"
-include("lib")
