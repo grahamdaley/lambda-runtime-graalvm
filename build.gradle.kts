@@ -8,8 +8,6 @@ object Meta {
     const val DESC = "Based on FormKiQ Lambda Runtime Graalvm by Mike Friesen"
     const val LICENSE = "Apache-2.0"
     const val GITHUB_REPO = "grahamdaley/lambda-runtime-graalvm"
-    const val RELEASE = "https://s01.oss.sonatype.org/service/local/"
-    const val SNAPSHOT = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
 }
 
 repositories {
@@ -64,7 +62,7 @@ mavenPublishing {
 
     pom {
         name.set("Lambda Runtime Graalvm")
-        description.set("Based on FormKiQ Lambda Runtime Graalvm by Mike Friesen")
+        description.set(Meta.DESC)
         inceptionYear.set("2024")
         url.set("https://github.com/${Meta.GITHUB_REPO}")
         licenses {
