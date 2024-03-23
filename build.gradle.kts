@@ -1,7 +1,7 @@
 import com.vanniktech.maven.publish.SonatypeHost
 
 group = "io.github.grahamdaley"
-version = "3.0.0"
+version = "3.0.1-SNAPSHOT"
 
 object Meta {
     const val NAME = "lambda-runtime-graalvm"
