@@ -64,4 +64,4 @@ printf "\n\n\n# Tag and push %s\n\n" "$VERSION_TAG"
 git tag "$VERSION_TAG"
 git push --tags origin
 
-printf "\n\n\n<<--==  KWebParser %s successfully released  ==-->>\n\n" "$VERSION_TAG"
+printf "\n\n\n<<--==  lambda-runtime-graalvm %s successfully released  ==-->>\n\n" "$VERSION_TAG"

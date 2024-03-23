@@ -47,4 +47,4 @@ find . -name "*.versionsBackup" -exec rm {} \;
 git commit -am "Next is $SNAPSHOT_VERSION"
 git push origin master
 
-printf "\n\n\n<<--==  Bump KWebParser to %s  ==-->>\n\n" "$SNAPSHOT_VERSION"
+printf "\n\n\n<<--==  Bump lambda-runtime-graalvm to %s  ==-->>\n\n" "$SNAPSHOT_VERSION"
