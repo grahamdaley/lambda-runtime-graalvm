@@ -13,7 +13,6 @@
 package com.reaptechnology.lambda.runtime.graalvm;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-
 import java.io.IOException;
 
 /** Implementation of {@link LambdaLogger}. */

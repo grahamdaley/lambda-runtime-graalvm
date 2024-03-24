@@ -12,19 +12,18 @@
  */
 package com.reaptechnology.lambda.runtime.graalvm;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockserver.integration.ClientAndServer.startClientAndServer;
+import static org.mockserver.model.HttpRequest.request;
+
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.mock.action.ExpectationResponseCallback;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockserver.integration.ClientAndServer.startClientAndServer;
-import static org.mockserver.model.HttpRequest.request;
 
 /** Unit tests for {@link LambdaRuntime}. */
 public class LambdaRuntimeTest {

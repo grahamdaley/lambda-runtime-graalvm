@@ -14,7 +14,6 @@ package com.reaptechnology.lambda.runtime.graalvm;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-
 import java.util.Map;
 
 /** Test {@link RequestHandler}, input {@link Map} return {@link Void}. */
