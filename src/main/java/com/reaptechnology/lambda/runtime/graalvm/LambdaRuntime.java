@@ -14,20 +14,10 @@ package com.reaptechnology.lambda.runtime.graalvm;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,9 +38,6 @@ public class LambdaRuntime {
   private static final String LAMBDA_INVOCATION_URL_TEMPLATE =
       "http://{0}/{1}/runtime/invocation/{2}/response";
 
-  /** Lambda Init Error URL. */
-  private static final String LAMBDA_INIT_ERROR_URL_TEMPLATE = "http://{0}/{1}/runtime/init/error";
-
   /** Lambda Error Inocation Url. */
   private static final String LAMBDA_ERROR_URL_TEMPLATE =
       "http://{0}/{1}/runtime/invocation/{2}/error";
@@ -60,138 +47,36 @@ public class LambdaRuntime {
       "'{'\"errorMessage\":\"{0}\",\"errorType\":\"{1}\"'}'";
 
   /**
-   * Find {@link RequestHandler} "handleRequest".
-   *
-   * @param clazz {@link Class}
-   * @param methodName {@link String}
-   * @return {@link Method}
-   */
-  private static Method findRequestHandlerMethod(final Class<?> clazz, final String methodName) {
-    Method method = null;
-
-    for (Method m : clazz.getMethods()) {
-      if (m.getName().equalsIgnoreCase(methodName)) {
-        method = m;
-        break;
-      }
-    }
-    return method;
-  }
-
-  /**
-   * Handle Init Error.
-   *
-   * @param env {@link Map}
-   * @param ex {@link Exception}
-   * @param context {@link Context}
-   * @throws IOException IOException
-   */
-  public static void handleInitError(
-      final Map<String, String> env, final Exception ex, final Context context) throws IOException {
-
-    ex.printStackTrace();
-
-    String runtimeApi = env.get("AWS_LAMBDA_RUNTIME_API");
-
-    if (runtimeApi != null) {
-      String initErrorUrl =
-          MessageFormat.format(LAMBDA_INIT_ERROR_URL_TEMPLATE, runtimeApi, LAMBDA_VERSION_DATE);
-
-      String error =
-          MessageFormat.format(
-              ERROR_RESPONSE_TEMPLATE, "Could not find handler method", "InitError");
-      HttpClient.post(initErrorUrl, error);
-    }
-  }
-
-  /**
-   * Handle Lambda Invocation Errors.
-   *
-   * @param env {@link Map}
-   * @param requestId {@link String}
-   * @param ex {@link Exception}
-   * @param context {@link Context}
-   */
-  public static void handleInvocationException(
-      final Map<String, String> env,
-      final String requestId,
-      final Exception ex,
-      final Context context) {
-    ex.printStackTrace();
-
-    String runtimeApi = env.get("AWS_LAMBDA_RUNTIME_API");
-
-    if (runtimeApi != null) {
-      String initErrorUrl =
-          MessageFormat.format(
-              LAMBDA_ERROR_URL_TEMPLATE, runtimeApi, LAMBDA_VERSION_DATE, requestId);
-
-      String error =
-          MessageFormat.format(ERROR_RESPONSE_TEMPLATE, "Invocation Error", "RuntimeError");
-
-      try {
-        HttpClient.post(initErrorUrl, error);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-  }
-
-  /**
-   * Invoke Lambda Runtime.
-   *
-   * @param env {@link Map} - System environment parameters
-   * @throws IOException IOException
-   */
-  public static void invoke(final Map<String, String> env) throws IOException {
-    String method = null;
-    String handlerName = env.get("_HANDLER");
-    if (handlerName == null) {
-      throw new RuntimeException("'_HANDLER' system property not set");
-    }
-
-    int pos = handlerName.indexOf("::");
-    if (pos > 0) {
-      method = handlerName.substring(pos + 2);
-      handlerName = handlerName.substring(0, pos);
-    }
-
-    Object handler = null;
-
-    try {
-      Class<?> clazz = Class.forName(handlerName);
-      handler = clazz.getConstructor().newInstance();
-    } catch (Exception e) {
-      Context context = new LambdaContext(UUID.randomUUID().toString());
-      LambdaRuntime.handleInitError(env, e, context);
-    }
-
-    if (handler != null) {
-      invokeClass(env, handler, method);
-    }
-  }
-
-  /**
    * Main entry point for statically-linked handler.
    *
    * @param handler {@link RequestHandler}
+   * @param inClass {@link Class}
+   * @param outClass {@link Class}
    * @throws IOException IOException
    */
   @SuppressWarnings("rawtypes")
-  public static void invoke(final RequestHandler handler) throws IOException {
-    invokeClass(envToMap(), handler, "handleRequest");
+  public static void invoke(
+      final RequestHandler handler, final Class<?> inClass, final Class<?> outClass)
+      throws IOException {
+    invoke(handler, envToMap(), inClass, outClass);
   }
 
   /**
-   * Handle Lambda Request.
+   * Alternative entry point with handler and environment variables.
    *
+   * @param handler {@link RequestHandler}
    * @param env {@link Map}
-   * @param handler {@link Object}
-   * @param method {@link String}
-   * @throws IOException Request Failed to get Lambda Runtime Event
+   * @param inClass {@link Class}
+   * @param outClass {@link Class}
+   * @throws IOException IOException
    */
-  private static void invokeClass(
-      final Map<String, String> env, final Object handler, final String method) throws IOException {
+  @SuppressWarnings("rawtypes")
+  public static void invoke(
+      final RequestHandler handler,
+      final Map<String, String> env,
+      final Class<?> inClass,
+      final Class<?> outClass)
+      throws IOException {
     String runtimeApi = env.get("AWS_LAMBDA_RUNTIME_API");
 
     String runtimeUrl =
@@ -200,8 +85,7 @@ public class LambdaRuntime {
             : null;
 
     // Main event loop
-    while (true) {
-
+    do {
       // Get next Lambda Event
       Context context = null;
       String eventBody = null;
@@ -221,9 +105,7 @@ public class LambdaRuntime {
       }
 
       try {
-
-        String result = invokeLambdaRequestHandler(handler, method, context, eventBody);
-
+        String result = invokeLambdaRequestHandler(handler, context, eventBody, inClass, outClass);
         if (runtimeApi != null) {
 
           // Post the results of Handler Invocation
@@ -231,94 +113,40 @@ public class LambdaRuntime {
               MessageFormat.format(
                   LAMBDA_INVOCATION_URL_TEMPLATE, runtimeApi, LAMBDA_VERSION_DATE, requestId);
           HttpClient.post(invocationUrl, result);
-
         } else {
-
           context.getLogger().log(result);
         }
-
       } catch (Exception e) {
         handleInvocationException(env, requestId, e, context);
       }
 
-      if ("true".equals(env.getOrDefault("SINGLE_LOOP", "false"))) {
-        break;
-      }
-    }
+    } while (!"true".equals(env.getOrDefault("SINGLE_LOOP", "false")));
   }
 
   /**
    * Invoke Lambda method.
    *
    * @param handler {@link Object}
-   * @param methodName {@link String}
    * @param context {@link Context}
    * @param payload {@link String}
+   * @param inClass {@link Class}
+   * @param outClass {@link Class}
    * @return {@link String}
-   * @throws Exception Exception
    */
+  @SuppressWarnings({"rawtypes", "unchecked"})
   private static String invokeLambdaRequestHandler(
-      final Object handler, final String methodName, final Context context, final String payload)
-      throws Exception {
-
-    String value = null;
-    ByteArrayOutputStream output = new ByteArrayOutputStream();
-
-    if (methodName != null) {
-      value = invokeMethod(handler, methodName, payload, context);
-    } else if (handler instanceof RequestHandler) {
-      value = invokeMethod(handler, "handleRequest", payload, context);
-    } else if (handler instanceof RequestStreamHandler) {
-
-      value = invokeRequestStreamHandler((RequestStreamHandler) handler, payload, output, context);
-
-    } else {
-      throw new UnsupportedOperationException(
-          "Unsupported handler: " + handler.getClass().getName());
-    }
-
-    return value;
-  }
-
-  /**
-   * Invoke {@link RequestHandler}.
-   *
-   * @param object {@link Object}
-   * @param methodName {@link String}
-   * @param payload {@link String}
-   * @param context {@link Context}
-   * @return {@link String}
-   * @throws InvocationTargetException InvocationTargetException
-   * @throws IllegalArgumentException IllegalArgumentException
-   * @throws IllegalAccessException IllegalAccessException
-   * @throws ClassNotFoundException ClassNotFoundException
-   */
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private static String invokeMethod(
-      final Object object, final String methodName, final String payload, final Context context)
-      throws IllegalAccessException,
-          IllegalArgumentException,
-          InvocationTargetException,
-          ClassNotFoundException {
+      final RequestHandler handler,
+      final Context context,
+      final String payload,
+      final Class<?> inClass,
+      final Class<?> outClass) {
+    Gson gson = new GsonBuilder().create();
+    Object input = gson.fromJson(payload, inClass);
+    Object value = handler.handleRequest(input, context);
 
     String val = "";
-    Method method = findRequestHandlerMethod(object.getClass(), methodName);
-    Class<?> parameterType = getParameterType(object, method);
-    Gson gson = new GsonBuilder().create();
-
-    Object input = gson.fromJson(payload, parameterType);
-
-    Object value = null;
-    if (methodName == null && object instanceof RequestHandler) {
-      value = ((RequestHandler) object).handleRequest(input, context);
-    } else {
-      value = method.invoke(object, input, context);
-    }
-
-    Class<?> valueClass = value != null ? value.getClass() : null;
-
-    if (valueClass != null) {
-      if (String.class.equals(valueClass)) {
+    if (value != null) {
+      if (String.class.equals(outClass)) {
         val = value.toString();
       } else {
         val = gson.toJson(value);
@@ -326,61 +154,6 @@ public class LambdaRuntime {
     }
 
     return val;
-  }
-
-  /**
-   * Get the Parameter Type of the Object.
-   *
-   * @param object {@link Object}
-   * @param method {@link Method}
-   * @return {@link Class}
-   * @throws ClassNotFoundException ClassNotFoundException
-   */
-  private static Class<?> getParameterType(final Object object, final Method method)
-      throws ClassNotFoundException {
-    Parameter parameter = method.getParameters()[0];
-    Class<?> parameterType = parameter.getType();
-
-    if (Object.class.equals(parameterType)) {
-
-      Type[] types = object.getClass().getGenericInterfaces();
-      if (types.length > 0 && types[0] instanceof ParameterizedType) {
-        ParameterizedType p = (ParameterizedType) types[0];
-        if (p.getActualTypeArguments().length > 0) {
-          String typeName = p.getActualTypeArguments()[0].getTypeName();
-          if (typeName.startsWith("java.util.Map")) {
-            parameterType = Map.class;
-          } else {
-            parameterType = Class.forName(typeName);
-          }
-        }
-      }
-    }
-
-    return parameterType;
-  }
-
-  /**
-   * Invoke {@link RequestStreamHandler}.
-   *
-   * @param handler {@link RequestStreamHandler}
-   * @param payload {@link String}
-   * @param output {@link ByteArrayOutputStream}
-   * @param context {@link Context}
-   * @return {@link String}
-   * @throws IOException IOException
-   */
-  private static String invokeRequestStreamHandler(
-      final RequestStreamHandler handler,
-      final String payload,
-      final ByteArrayOutputStream output,
-      final Context context)
-      throws IOException {
-
-    InputStream input = new ByteArrayInputStream(payload.getBytes(StandardCharsets.UTF_8));
-    handler.handleRequest(input, output, context);
-
-    return output.toString(StandardCharsets.UTF_8);
   }
 
   /**
@@ -403,12 +176,35 @@ public class LambdaRuntime {
   }
 
   /**
-   * Main Linux for Lambda.
+   * Handle Lambda Invocation Errors.
    *
-   * @param args String[]
-   * @throws IOException IOException
+   * @param env {@link Map}
+   * @param requestId {@link String}
+   * @param ex {@link Exception}
+   * @param context {@link Context}
    */
-  public static void main(final String[] args) throws IOException {
-    invoke(envToMap());
+  private static void handleInvocationException(
+      final Map<String, String> env,
+      final String requestId,
+      final Exception ex,
+      final Context context) {
+    ex.printStackTrace();
+
+    String runtimeApi = env.get("AWS_LAMBDA_RUNTIME_API");
+
+    if (runtimeApi != null) {
+      String initErrorUrl =
+          MessageFormat.format(
+              LAMBDA_ERROR_URL_TEMPLATE, runtimeApi, LAMBDA_VERSION_DATE, requestId);
+
+      String error =
+          MessageFormat.format(ERROR_RESPONSE_TEMPLATE, "Invocation Error", "RuntimeError");
+
+      try {
+        HttpClient.post(initErrorUrl, error);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
   }
 }

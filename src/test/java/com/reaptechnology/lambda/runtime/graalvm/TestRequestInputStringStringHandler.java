@@ -17,7 +17,6 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 
 /** Test {@link RequestHandler}, input {@link String} return {@link String}. */
 public class TestRequestInputStringStringHandler implements RequestHandler<String, String> {
-
   @Override
   public String handleRequest(final String input, final Context context) {
     return "this is a test string";

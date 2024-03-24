@@ -19,12 +19,10 @@ import org.junit.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.mock.action.ExpectationResponseCallback;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 
@@ -50,15 +48,10 @@ public class LambdaRuntimeTest {
   /** {@link InvocationNextHandler}. */
   private static InvocationNextHandler invocationNextHandler = new InvocationNextHandler();
 
-  /**
-   * before class.
-   *
-   * @throws Exception Exception
-   */
+  /** before class. */
   @BeforeClass
-  public static void beforeClass() throws Exception {
-
-    mockServer = startClientAndServer(Integer.valueOf(SERVER_PORT));
+  public static void beforeClass() {
+    mockServer = startClientAndServer(SERVER_PORT);
 
     add("GET", "/2018-06-01/runtime/invocation/next", invocationNextHandler);
     add(
@@ -80,24 +73,20 @@ public class LambdaRuntimeTest {
    * @param method {@link String}
    * @param path {@link String}
    * @param response {@link ExpectationResponseCallback}
-   * @throws IOException IOException
    */
   private static void add(
-      final String method, final String path, final ExpectationResponseCallback response)
-      throws IOException {
+      final String method, final String path, final ExpectationResponseCallback response) {
     mockServer.when(request().withMethod(method).withPath(path)).respond(response);
   }
 
   /**
    * Create Lambda Environment.
    *
-   * @param handler {@link String}
    * @return {@link Map}
    */
-  private Map<String, String> createEnv(final String handler) {
+  private Map<String, String> createEnv() {
     Map<String, String> env = new HashMap<>();
     env.put("AWS_LAMBDA_RUNTIME_API", SERVER_HOST + ":" + SERVER_PORT);
-    env.put("_HANDLER", handler);
     env.put("SINGLE_LOOP", "true");
     return env;
   }
@@ -114,53 +103,16 @@ public class LambdaRuntimeTest {
    * @throws Exception Exception
    */
   @Test
-  public void testInvoke01() throws Exception {
+  public void testInvokeWithStringStringHandler() throws Exception {
     // given
-    Map<String, String> env = createEnv(TestRequestStreamHandler.class.getName());
+    Map<String, String> env = createEnv();
 
     // when
-    LambdaRuntime.invoke(env);
+    LambdaRuntime.invoke(
+        new TestRequestInputStringStringHandler(), env, String.class, String.class);
 
     // then
-    assertEquals("test data result", invocationResponseHandler.getResponse());
-  }
-
-  /**
-   * Test Invoke with Invalid _HANDLER.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  public void testInvoke02() throws Exception {
-    // given
-    Map<String, String> env = createEnv("com.formkiq.NonExistance.class");
-
-    // when
-    LambdaRuntime.invoke(env);
-
-    // then
-    String expected =
-        "{\"errorMessage\":\"Could not find handler method\",\"errorType\":\"InitError\"}";
-    assertEquals(expected, invocationResponseHandler.getResponse());
-  }
-
-  /**
-   * Test Lambda throwing exception.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  public void testInvoke03() throws Exception {
-    // given
-    Map<String, String> env = createEnv(TestRequestThrowsExceptionHandler.class.getName());
-
-    // when
-    LambdaRuntime.invoke(env);
-
-    // then
-    String expected =
-        "{\"errorMessage\":\"Could not find handler method\",\"errorType\":\"InitError\"}";
-    assertEquals(expected, invocationResponseHandler.getResponse());
+    assertEquals("this is a test string", invocationResponseHandler.getResponse());
   }
 
   /**
@@ -169,34 +121,16 @@ public class LambdaRuntimeTest {
    * @throws Exception Exception
    */
   @Test
-  public void testInvoke04() throws Exception {
+  public void testInvokeWithMapVoidHandler() throws Exception {
     // given
     invocationNextHandler.setResponseContent("{\"data\":\"test\"}");
-    Map<String, String> env = createEnv(TestRequestInputMapVoidHandler.class.getName());
+    Map<String, String> env = createEnv();
 
     // when
-    LambdaRuntime.invoke(env);
+    LambdaRuntime.invoke(new TestRequestInputMapVoidHandler(), env, Map.class, Void.class);
 
     // then
     String expected = "";
-    assertEquals(expected, invocationResponseHandler.getResponse());
-  }
-
-  /**
-   * Test invoke Lambda with {@link TestRequestInputStringStringHandler}.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  public void testInvoke05() throws Exception {
-    // given
-    Map<String, String> env = createEnv(TestRequestInputStringStringHandler.class.getName());
-
-    // when
-    LambdaRuntime.invoke(env);
-
-    // then
-    String expected = "this is a test string";
     assertEquals(expected, invocationResponseHandler.getResponse());
   }
 
@@ -206,12 +140,12 @@ public class LambdaRuntimeTest {
    * @throws Exception Exception
    */
   @Test
-  public void testInvoke06() throws Exception {
+  public void testInvokeWithStringIntHandler() throws Exception {
     // given
-    Map<String, String> env = createEnv(TestRequestInputStringIntHandler.class.getName());
+    Map<String, String> env = createEnv();
 
     // when
-    LambdaRuntime.invoke(env);
+    LambdaRuntime.invoke(new TestRequestInputStringIntHandler(), env, String.class, Integer.class);
 
     // then
     String expected = "98";
@@ -224,103 +158,15 @@ public class LambdaRuntimeTest {
    * @throws Exception Exception
    */
   @Test
-  public void testInvoke07() throws Exception {
+  public void testInvokeWithStringMapHandler() throws Exception {
     // given
-    Map<String, String> env = createEnv(TestRequestInputStringMapHandler.class.getName());
+    Map<String, String> env = createEnv();
 
     // when
-    LambdaRuntime.invoke(env);
+    LambdaRuntime.invoke(new TestRequestInputStringMapHandler(), env, String.class, Map.class);
 
     // then
     String expected = "{\"test\":\"123\"}";
     assertEquals(expected, invocationResponseHandler.getResponse());
-  }
-
-  /**
-   * Test invoke Lambda with {@link TestRequestInputStringStringHandler}.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  public void testInvoke08() throws Exception {
-    // given
-    String clazz =
-        "com.reaptechnology.lambda.runtime.graalvm.TestRequestInputStringStringHandler::handleRequest";
-    Map<String, String> env = createEnv(clazz);
-
-    // when
-    LambdaRuntime.invoke(env);
-
-    // then
-    String expected = "this is a test string";
-    assertEquals(expected, invocationResponseHandler.getResponse());
-  }
-
-  /**
-   * Test invoke Lambda with {@link TestRequestInputStringStringHandler} special method.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  public void testInvoke09() throws Exception {
-    // given
-    String clazz =
-        "com.reaptechnology.lambda.runtime.graalvm.TestRequestInputStringStringHandler::run";
-    Map<String, String> env = createEnv(clazz);
-
-    // when
-    LambdaRuntime.invoke(env);
-
-    // then
-    String expected = "this is a run string";
-    assertEquals(expected, invocationResponseHandler.getResponse());
-  }
-
-  /**
-   * Test invoke Lambda with {@link TestRequestInputStringStringHandler} special method and without
-   * environment variables.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  public void testInvoke10() throws Exception {
-    // given
-    String clazz =
-        "com.reaptechnology.lambda.runtime.graalvm.TestRequestInputStringStringHandler::run";
-    Map<String, String> env = createEnv(clazz);
-    env.remove("SINGLE_LOOP");
-    env.remove("AWS_LAMBDA_RUNTIME_API");
-
-    for (Map.Entry<String, String> e : env.entrySet()) {
-      System.setProperty(e.getKey(), e.getValue());
-    }
-
-    // when
-    LambdaRuntime.main(new String[] {});
-
-    // then
-    String expected = "this is a run string";
-    assertEquals(expected, invocationResponseHandler.getResponse());
-  }
-
-  /**
-   * Test invoke Lambda with {@link TestRequestApiGatewayProxyHandler} special method and without
-   * environment variables.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  public void testInvoke11() throws Exception {
-    // given
-    invocationNextHandler.setResponseContent("{\"body\":\"this is some data\"}");
-    Map<String, String> env = createEnv(TestRequestApiGatewayProxyHandler.class.getName());
-
-    // when
-    LambdaRuntime.invoke(env);
-
-    // then
-    String expected = "{\"body\":\"this is some data\"}";
-    assertEquals(expected, invocationResponseHandler.getResponse());
-    assertNotNull(System.getProperty("com.amazonaws.xray.traceHeader"));
   }
 }

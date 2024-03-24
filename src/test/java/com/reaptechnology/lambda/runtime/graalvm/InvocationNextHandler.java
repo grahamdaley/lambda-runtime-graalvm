@@ -44,6 +44,6 @@ public class InvocationNextHandler implements ExpectationResponseCallback {
         .withHeader("Lambda-Runtime-Aws-Request-Id", REQUEST_ID)
         .withHeader("Lambda-Runtime-Trace-Id", TRACE_ID)
         .withBody(responseContent)
-        .withStatusCode(Integer.valueOf(statusCode));
+        .withStatusCode(statusCode);
   }
 }
